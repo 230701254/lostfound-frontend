@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Lost & Found</title>
+
+<style>
+/* KEEP YOUR SAME STYLES (shortened for clarity) */
+body {
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  background: #020617;
+  color: white;
+}
+
+.hidden { display: none; }
+
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+}
+
+.card {
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px,1fr));
+  gap: 16px;
+}
+
+.item-card {
+  background: rgba(255,255,255,0.05);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+button {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background: red;
+  color: white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>📦 Lost & Found</h1>
+
+  <!-- USER BAR -->
+  <div id="userArea" style="text-align:right;"></div>
+
+  <!-- UPLOAD -->
+  <div class="card hidden" id="uploadCard">
+    <h3>Add Item</h3>
+
+    <form id="itemForm">
+      <input id="name" placeholder="Name" required /><br>
+      <input id="description" placeholder="Description" required /><br>
+      <input id="location" placeholder="Location" required /><br>
+      <input type="file" id="image" required /><br>
+
+      <img id="preview" style="display:none;max-height:150px" />
+
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+
+  <!-- ITEMS -->
+  <div id="loading">Loading...</div>
+  <div id="items" class="grid"></div>
+
+</div>
+
+<script>
+const API_URL = "https://lostfound-backend-52mp.onrender.com";
+const ALLOWED_DOMAIN = "@rajalakshmi.edu.in";
+
+let currentUser = null;
+
+/* DOM REFERENCES (IMPORTANT FIX) */
+const userArea = document.getElementById("userArea");
+const uploadCard = document.getElementById("uploadCard");
+const itemForm = document.getElementById("itemForm");
+const imageInput = document.getElementById("image");
+const preview = document.getElementById("preview");
+
+/* 🔐 CHECK AUTH */
+async function checkAuth() {
+  try {
+    const res = await fetch("/.auth/me");
+    const data = await res.json();
+
+    if (!data.clientPrincipal) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const user = data.clientPrincipal;
+
+    if (!user.userDetails.endsWith(ALLOWED_DOMAIN)) {
+      alert("Only college email allowed");
+      window.location.href = "/logout";
+      return;
+    }
+
+    currentUser = user.userDetails;
+
+    renderUI();
+    loadItems();
+
+  } catch (err) {
+    console.error(err);
+    alert("Auth error");
+  }
+}
+
+/* UI UPDATE */
+function renderUI() {
+  userArea.innerHTML = `
+    👤 ${currentUser}
+    <button onclick="logout()">Logout</button>
+  `;
+
+  uploadCard.classList.remove("hidden");
+}
+
+/* LOGOUT */
+function logout() {
+  window.location.href = "/logout";
+}
+
+/* IMAGE PREVIEW */
+imageInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+
+  if (file) {
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  }
+});
+
+/* LOAD ITEMS */
+async function loadItems() {
+  const loading = document.getElementById("loading");
+  const container = document.getElementById("items");
+
+  loading.style.display = "block";
+  container.innerHTML = "";
+
+  try {
+    const res = await fetch(API_URL + "/lost");
+    const data = await res.json();
+
+    loading.style.display = "none";
+
+    if (data.length === 0) {
+      container.innerHTML = "<p>No items found</p>";
+      return;
+    }
+
+    data.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "item-card";
+
+      div.innerHTML = `
+        <img src="${item.imageUrl}" />
+        <h3>${item.name}</h3>
+        <p>${item.description}</p>
+        <p>📍 ${item.location}</p>
+
+        <button onclick="deleteItem('${item.id}')" class="delete-btn">
+          Delete
+        </button>
+      `;
+
+      container.appendChild(div);
+    });
+
+  } catch (err) {
+    console.error(err);
+    loading.innerText = "Error loading items";
+  }
+}
+
+/* UPLOAD */
+itemForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+
+  formData.append("name", name.value);
+  formData.append("description", description.value);
+  formData.append("location", location.value);
+  formData.append("image", image.files[0]);
+
+  try {
+    const res = await fetch(API_URL + "/lost", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) throw new Error();
+
+    alert("Uploaded!");
+
+    itemForm.reset();
+    preview.style.display = "none";
+
+    loadItems();
+
+  } catch {
+    alert("Upload failed");
+  }
+});
+
+/* DELETE */
+async function deleteItem(id) {
+  if (!confirm("Delete item?")) return;
+
+  try {
+    const res = await fetch(API_URL + "/lost/" + id, {
+      method: "DELETE"
+    });
+
+    if (!res.ok) throw new Error();
+
+    alert("Deleted!");
+    loadItems();
+
+  } catch {
+    alert("Delete failed");
+  }
+}
+
+/* INIT */
+checkAuth();
+</script>
+
+</body>
+</html>
