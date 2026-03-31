@@ -2,108 +2,232 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Lost & Found</title>
+<title>Lost & Found Pro+</title>
 
 <style>
-/* KEEP YOUR SAME STYLES (shortened for clarity) */
+/* SAME STYLES (UNCHANGED) */
 body {
-  font-family: 'Segoe UI', sans-serif;
   margin: 0;
-  background: #020617;
+  font-family: 'Segoe UI';
+  background: linear-gradient(135deg,#020617,#0f172a);
   color: white;
 }
 
-.hidden { display: none; }
+.layout { display: flex; }
 
-.container {
-  max-width: 1000px;
-  margin: auto;
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(15px);
   padding: 20px;
 }
 
-.card {
+.sidebar a {
+  display: block;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  text-decoration: none;
+  color: white;
+}
+
+.sidebar a:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.main { flex: 1; padding: 20px; }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.hero {
+  background: linear-gradient(90deg,#6366f1,#22c55e);
+  padding: 30px;
+  border-radius: 15px;
+  margin-bottom: 25px;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.feature-card {
   background: rgba(255,255,255,0.05);
   padding: 15px;
   border-radius: 12px;
-  margin-bottom: 20px;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px,1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+  gap: 20px;
 }
 
-.item-card {
+.card {
   background: rgba(255,255,255,0.05);
-  padding: 10px;
-  border-radius: 10px;
+  border-radius: 15px;
+  overflow: hidden;
 }
 
-img {
+.card img {
   width: 100%;
-  border-radius: 8px;
+  height: 180px;
+  object-fit: cover;
 }
+
+.content { padding: 10px; }
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.lost { background: #ef4444; }
+.found { background: #22c55e; }
 
 button {
-  padding: 8px;
-  border-radius: 8px;
+  padding: 10px;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
 }
 
-.delete-btn {
-  background: red;
+.delete-btn { background: red; color: white; }
+
+.search-box {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  width: 250px;
+}
+
+.upload-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+}
+
+.upload-card {
+  width: 400px;
+  background: rgba(255,255,255,0.08);
+  padding: 25px;
+  border-radius: 15px;
+}
+
+.upload-card input,
+.upload-card select {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+}
+
+.upload-card button {
+  width: 100%;
+  background: #6366f1;
   color: white;
 }
+
+.hidden { display:none; }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="layout">
 
-  <h1>📦 Lost & Found</h1>
-
-  <!-- USER BAR -->
-  <div id="userArea" style="text-align:right;"></div>
-
-  <!-- UPLOAD -->
-  <div class="card hidden" id="uploadCard">
-    <h3>Add Item</h3>
-
-    <form id="itemForm">
-      <input id="name" placeholder="Name" required /><br>
-      <input id="description" placeholder="Description" required /><br>
-      <input id="location" placeholder="Location" required /><br>
-      <input type="file" id="image" required /><br>
-
-      <img id="preview" style="display:none;max-height:150px" />
-
-      <button type="submit">Upload</button>
-    </form>
+  <div class="sidebar">
+    <h2>📦 Lost & Found</h2>
+    <a onclick="showPage('dashboard')">🏠 Dashboard</a>
+    <a onclick="showPage('lost')">🔍 Lost</a>
+    <a onclick="showPage('found')">📦 Found</a>
+    <a onclick="showPage('upload')">⬆ Upload</a>
   </div>
 
-  <!-- ITEMS -->
-  <div id="loading">Loading...</div>
-  <div id="items" class="grid"></div>
+  <div class="main">
 
+    <div class="topbar">
+      <div id="userArea"></div>
+      <input id="search" class="search-box hidden" placeholder="Search..." />
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboardPage">
+      <div class="hero">
+        <h1>👋 Welcome Back!</h1>
+        <p>Find lost items or help others recover theirs quickly.</p>
+      </div>
+
+      <div>
+        <button onclick="showPage('lost')">🔍 Browse Lost</button>
+        <button onclick="showPage('found')">📦 Browse Found</button>
+        <button onclick="showPage('upload')">⬆ Upload Item</button>
+      </div>
+
+      <div class="features">
+        <div class="feature-card">⚡ Fast search</div>
+        <div class="feature-card">🔒 Secure upload</div>
+        <div class="feature-card">📍 Location tracking</div>
+        <div class="feature-card">🤝 Easy recovery</div>
+      </div>
+
+      <h2>🕒 Recently Added</h2>
+      <div id="recentItems" class="grid"></div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div id="uploadPage" class="hidden">
+      <div class="upload-container">
+        <div class="upload-card">
+          <h2>Add Item</h2>
+          <form id="itemForm">
+            <input id="name" placeholder="Name" required />
+            <input id="description" placeholder="Description" required />
+            <input id="location" placeholder="Location" required />
+
+            <select id="type">
+              <option value="lost">Lost</option>
+              <option value="found">Found</option>
+            </select>
+
+            <input type="file" id="image" required />
+            <img id="preview" style="display:none;max-height:120px" />
+
+            <button type="submit">Upload Item</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS -->
+    <div id="itemsPage" class="hidden">
+      <h2 id="pageTitle"></h2>
+      <div id="items" class="grid"></div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-const API_URL = "https://lostfound-backend-52mp.onrender.com";
+const API = "https://lostfound-backend-52mp.onrender.com";
 const ALLOWED_DOMAIN = "@rajalakshmi.edu.in";
 
 let currentUser = null;
+let currentData = [];
+let currentType = "lost";
 
-/* DOM REFERENCES (IMPORTANT FIX) */
-const userArea = document.getElementById("userArea");
-const uploadCard = document.getElementById("uploadCard");
-const itemForm = document.getElementById("itemForm");
-const imageInput = document.getElementById("image");
-const preview = document.getElementById("preview");
-
-/* 🔐 CHECK AUTH */
+/* 🔐 AUTH */
 async function checkAuth() {
   try {
     const res = await fetch("/.auth/me");
@@ -123,132 +247,131 @@ async function checkAuth() {
     }
 
     currentUser = user.userDetails;
+    document.getElementById("userArea").innerText = "👤 " + currentUser;
 
-    renderUI();
-    loadItems();
+    showPage("dashboard");
 
   } catch (err) {
-    console.error(err);
     alert("Auth error");
   }
 }
 
-/* UI UPDATE */
-function renderUI() {
-  userArea.innerHTML = `
-    👤 ${currentUser}
-    <button onclick="logout()">Logout</button>
-  `;
+/* NAVIGATION */
+function showPage(page) {
+  ["dashboardPage","uploadPage","itemsPage"].forEach(id =>
+    document.getElementById(id).classList.add("hidden")
+  );
 
-  uploadCard.classList.remove("hidden");
-}
+  search.classList.add("hidden");
 
-/* LOGOUT */
-function logout() {
-  window.location.href = "/logout";
-}
-
-/* IMAGE PREVIEW */
-imageInput.addEventListener("change", (e) => {
-  const file = e.target.files[0];
-
-  if (file) {
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "block";
+  if (page === "dashboard") {
+    dashboardPage.classList.remove("hidden");
+    loadRecent();
   }
+
+  if (page === "upload") {
+    uploadPage.classList.remove("hidden");
+  }
+
+  if (page === "lost" || page === "found") {
+    itemsPage.classList.remove("hidden");
+    pageTitle.innerText = page.toUpperCase();
+    currentType = page;
+    search.classList.remove("hidden");
+    loadItems(page);
+  }
+}
+
+/* DATA */
+async function loadRecent() {
+  const lost = await fetch(API+"/lost").then(r=>r.json());
+  const found = await fetch(API+"/found").then(r=>r.json());
+
+  const combined = [...lost, ...found].slice(0,4);
+
+  recentItems.innerHTML = "";
+
+  combined.forEach(item => {
+    recentItems.innerHTML += `
+      <div class="card">
+        <img src="${item.imageUrl}">
+        <div class="content">
+          <h3>${item.name}</h3>
+          <p>${item.location}</p>
+        </div>
+      </div>
+    `;
+  });
+}
+
+async function loadItems(type) {
+  const data = await fetch(API+"/"+type).then(r=>r.json());
+  currentData = data;
+  render(data);
+}
+
+function render(data) {
+  items.innerHTML = "";
+
+  data.forEach(item => {
+    items.innerHTML += `
+      <div class="card">
+        <img src="${item.imageUrl}">
+        <div class="content">
+          <span class="badge ${currentType}">${currentType}</span>
+          <h3>${item.name}</h3>
+          <p>${item.description}</p>
+          <p>📍 ${item.location}</p>
+          <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+/* SEARCH */
+search.addEventListener("input", (e) => {
+  const val = e.target.value.toLowerCase();
+  render(currentData.filter(item =>
+    item.name.toLowerCase().includes(val) ||
+    item.location.toLowerCase().includes(val)
+  ));
 });
-
-/* LOAD ITEMS */
-async function loadItems() {
-  const loading = document.getElementById("loading");
-  const container = document.getElementById("items");
-
-  loading.style.display = "block";
-  container.innerHTML = "";
-
-  try {
-    const res = await fetch(API_URL + "/lost");
-    const data = await res.json();
-
-    loading.style.display = "none";
-
-    if (data.length === 0) {
-      container.innerHTML = "<p>No items found</p>";
-      return;
-    }
-
-    data.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "item-card";
-
-      div.innerHTML = `
-        <img src="${item.imageUrl}" />
-        <h3>${item.name}</h3>
-        <p>${item.description}</p>
-        <p>📍 ${item.location}</p>
-
-        <button onclick="deleteItem('${item.id}')" class="delete-btn">
-          Delete
-        </button>
-      `;
-
-      container.appendChild(div);
-    });
-
-  } catch (err) {
-    console.error(err);
-    loading.innerText = "Error loading items";
-  }
-}
 
 /* UPLOAD */
 itemForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const formData = new FormData();
-
   formData.append("name", name.value);
   formData.append("description", description.value);
   formData.append("location", location.value);
   formData.append("image", image.files[0]);
 
-  try {
-    const res = await fetch(API_URL + "/lost", {
-      method: "POST",
-      body: formData
-    });
+  const type = document.getElementById("type").value;
 
-    if (!res.ok) throw new Error();
+  await fetch(API+"/"+type, { method:"POST", body:formData });
 
-    alert("Uploaded!");
-
-    itemForm.reset();
-    preview.style.display = "none";
-
-    loadItems();
-
-  } catch {
-    alert("Upload failed");
-  }
+  alert("Uploaded!");
+  showPage(type);
 });
 
 /* DELETE */
 async function deleteItem(id) {
-  if (!confirm("Delete item?")) return;
+  if (!confirm("Delete?")) return;
+  await fetch(API+"/"+currentType+"/"+id,{method:"DELETE"});
+  loadItems(currentType);
+}
 
-  try {
-    const res = await fetch(API_URL + "/lost/" + id, {
-      method: "DELETE"
-    });
+/* PREVIEW */
+image.addEventListener("change",(e)=>{
+  preview.src = URL.createObjectURL(e.target.files[0]);
+  preview.style.display="block";
+});
 
-    if (!res.ok) throw new Error();
-
-    alert("Deleted!");
-    loadItems();
-
-  } catch {
-    alert("Delete failed");
-  }
+/* LOGOUT */
+function logout(){
+  window.location.href="/logout";
 }
 
 /* INIT */
