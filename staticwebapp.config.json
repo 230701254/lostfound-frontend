@@ -2,11 +2,11 @@
   "routes": [
     {
       "route": "/login",
-      "redirect": "/.auth/login/google"
+      "redirect": "/.auth/login/google?post_login_redirect_uri=/app.html"
     },
     {
       "route": "/logout",
-      "redirect": "/.auth/logout"
+      "redirect": "/.auth/logout?post_logout_redirect_uri=/"
     },
     {
       "route": "/app.html",
