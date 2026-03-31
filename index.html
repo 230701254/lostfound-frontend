@@ -15,6 +15,32 @@
       text-align: center;
     }
 
+    h2 {
+      text-align: center;
+    }
+
+    form {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    input, button {
+      padding: 8px;
+      margin: 5px;
+      width: 200px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
     .grid {
       display: flex;
       flex-wrap: wrap;
@@ -52,20 +78,45 @@
 
 <h1>📦 Lost Items</h1>
 
+<!-- 🚀 ADD ITEM FORM -->
+<h2>Add Lost Item</h2>
+
+<form id="itemForm">
+  <input placeholder="Name" id="name" required /><br />
+  <input placeholder="Description" id="description" required /><br />
+  <input placeholder="Location" id="location" required /><br />
+
+  <!-- 🔥 IMAGE FILE -->
+  <input type="file" id="image" accept="image/*" required /><br />
+
+  <button type="submit">Upload Item</button>
+</form>
+
+<hr />
+
 <div class="loading" id="loading">Loading...</div>
 <div class="grid" id="items"></div>
 
 <script>
+const API_URL = "https://lostfound-backend-52mp.onrender.com";
+
+/* 🔽 LOAD ITEMS */
 async function loadItems() {
   const loading = document.getElementById("loading");
 
   try {
-    const res = await fetch("https://lostfound-backend-52mp.onrender.com/lost");
+    const res = await fetch(API_URL + "/lost");
     const data = await res.json();
 
     loading.style.display = "none";
 
     const container = document.getElementById("items");
+    container.innerHTML = "";
+
+    if (data.length === 0) {
+      container.innerHTML = "<p>No items found 😢</p>";
+      return;
+    }
 
     data.forEach(item => {
       const div = document.createElement("div");
@@ -87,6 +138,42 @@ async function loadItems() {
   }
 }
 
+/* 🔼 UPLOAD ITEM */
+document.getElementById("itemForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+
+  formData.append("name", document.getElementById("name").value);
+  formData.append("description", document.getElementById("description").value);
+  formData.append("location", document.getElementById("location").value);
+
+  const file = document.getElementById("image").files[0];
+  formData.append("image", file);
+
+  try {
+    const res = await fetch(API_URL + "/lost", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) throw new Error("Upload failed");
+
+    alert("✅ Item uploaded!");
+
+    // clear form
+    document.getElementById("itemForm").reset();
+
+    // reload items
+    loadItems();
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Upload failed");
+  }
+});
+
+/* INIT */
 loadItems();
 </script>
 
