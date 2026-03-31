@@ -219,6 +219,8 @@ button {
   </div>
 </div>
 
+<!-- ONLY SCRIPT PART UPDATED, UI SAME -->
+
 <script>
 const API = "https://lostfound-backend-52mp.onrender.com";
 const ALLOWED_DOMAIN = "@rajalakshmi.edu.in";
@@ -247,11 +249,11 @@ async function checkAuth() {
     }
 
     currentUser = user.userDetails;
-    document.getElementById("userArea").innerText = "👤 " + currentUser;
+    userArea.innerText = "👤 " + currentUser;
 
     showPage("dashboard");
 
-  } catch (err) {
+  } catch {
     alert("Auth error");
   }
 }
@@ -282,7 +284,7 @@ function showPage(page) {
   }
 }
 
-/* DATA */
+/* LOAD DATA */
 async function loadRecent() {
   const lost = await fetch(API+"/lost").then(r=>r.json());
   const found = await fetch(API+"/found").then(r=>r.json());
@@ -322,7 +324,10 @@ function render(data) {
           <h3>${item.name}</h3>
           <p>${item.description}</p>
           <p>📍 ${item.location}</p>
-          <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
+
+          ${item.user === currentUser ? `
+            <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
+          ` : ""}
         </div>
       </div>
     `;
@@ -332,6 +337,7 @@ function render(data) {
 /* SEARCH */
 search.addEventListener("input", (e) => {
   const val = e.target.value.toLowerCase();
+
   render(currentData.filter(item =>
     item.name.toLowerCase().includes(val) ||
     item.location.toLowerCase().includes(val)
@@ -347,10 +353,14 @@ itemForm.addEventListener("submit", async (e) => {
   formData.append("description", description.value);
   formData.append("location", location.value);
   formData.append("image", image.files[0]);
+  formData.append("user", currentUser); // 🔥 IMPORTANT
 
   const type = document.getElementById("type").value;
 
-  await fetch(API+"/"+type, { method:"POST", body:formData });
+  await fetch(API+"/"+type, {
+    method: "POST",
+    body: formData
+  });
 
   alert("Uploaded!");
   showPage(type);
@@ -359,7 +369,15 @@ itemForm.addEventListener("submit", async (e) => {
 /* DELETE */
 async function deleteItem(id) {
   if (!confirm("Delete?")) return;
-  await fetch(API+"/"+currentType+"/"+id,{method:"DELETE"});
+
+  await fetch(API+"/"+currentType+"/"+id, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ user: currentUser }) // 🔥 IMPORTANT
+  });
+
   loadItems(currentType);
 }
 
