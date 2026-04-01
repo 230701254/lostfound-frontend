@@ -301,7 +301,7 @@ async function checkAuth() {
     }
 
     currentUser = user.userDetails;
-    userArea.innerText = "👤 " + currentUser;
+    document.getElementById("userArea").innerText = "👤 " + currentUser;
 
     showPage("dashboard");
 
@@ -316,22 +316,22 @@ function showPage(page) {
     document.getElementById(id).classList.add("hidden")
   );
 
-  search.classList.add("hidden");
+  document.getElementById("search").classList.add("hidden");
 
   if (page === "dashboard") {
-    dashboardPage.classList.remove("hidden");
+    document.getElementById("dashboardPage").classList.remove("hidden");
     loadRecent();
   }
 
   if (page === "upload") {
-    uploadPage.classList.remove("hidden");
+    document.getElementById("uploadPage").classList.remove("hidden");
   }
 
   if (page === "lost" || page === "found") {
-    itemsPage.classList.remove("hidden");
-    pageTitle.innerText = page.toUpperCase();
+    document.getElementById("itemsPage").classList.remove("hidden");
+    document.getElementById("pageTitle").innerText = page.toUpperCase();
     currentType = page;
-    search.classList.remove("hidden");
+    document.getElementById("search").classList.remove("hidden");
     loadItems(page);
   }
 }
@@ -343,15 +343,16 @@ async function loadRecent() {
 
   const combined = [...lost, ...found].slice(0,4);
 
-  recentItems.innerHTML = "";
+  const container = document.getElementById("recentItems");
+  container.innerHTML = "";
 
   combined.forEach(item => {
-    recentItems.innerHTML += `
+    container.innerHTML += `
       <div class="card">
         <img src="${item.imageUrl}">
         <div class="content">
-          <h3>${item.name}</h3>
-          <p>${item.location}</p>
+          <h3>${item.name || "No Name"}</h3>
+          <p>${item.location || "No Location"}</p>
         </div>
       </div>
     `;
@@ -365,17 +366,18 @@ async function loadItems(type) {
 }
 
 function render(data) {
-  items.innerHTML = "";
+  const container = document.getElementById("items");
+  container.innerHTML = "";
 
   data.forEach(item => {
-    items.innerHTML += `
+    container.innerHTML += `
       <div class="card">
         <img src="${item.imageUrl}">
         <div class="content">
           <span class="badge ${currentType}">${currentType}</span>
-          <h3>${item.name}</h3>
-          <p>${item.description}</p>
-          <p>📍 ${item.location}</p>
+          <h3>${item.name || "No Name"}</h3>
+          <p>${item.description || ""}</p>
+          <p>📍 ${item.location || "Unknown"}</p>
 
           ${item.user === currentUser ? `
             <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
@@ -387,25 +389,30 @@ function render(data) {
 }
 
 /* SEARCH */
-search.addEventListener("input", (e) => {
+document.getElementById("search").addEventListener("input", (e) => {
   const val = e.target.value.toLowerCase();
 
   render(currentData.filter(item =>
-    item.name.toLowerCase().includes(val) ||
-    item.location.toLowerCase().includes(val)
+    (item.name || "").toLowerCase().includes(val) ||
+    (item.location || "").toLowerCase().includes(val)
   ));
 });
 
-/* UPLOAD */
-itemForm.addEventListener("submit", async (e) => {
+/* 🔥 FIXED UPLOAD (MAIN BUG FIX HERE) */
+document.getElementById("itemForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const nameInput = document.getElementById("name");
+  const descInput = document.getElementById("description");
+  const locInput = document.getElementById("location");
+  const imageInput = document.getElementById("image");
+
   const formData = new FormData();
-  formData.append("name", name.value);
-  formData.append("description", description.value);
-  formData.append("location", location.value);
-  formData.append("image", image.files[0]);
-  formData.append("user", currentUser); // 🔥 IMPORTANT
+  formData.append("name", nameInput.value);
+  formData.append("description", descInput.value);
+  formData.append("location", locInput.value);
+  formData.append("image", imageInput.files[0]);
+  formData.append("user", currentUser);
 
   const type = document.getElementById("type").value;
 
@@ -415,6 +422,11 @@ itemForm.addEventListener("submit", async (e) => {
   });
 
   alert("Uploaded!");
+
+  // reset form
+  e.target.reset();
+  document.getElementById("preview").style.display = "none";
+
   showPage(type);
 });
 
@@ -427,14 +439,15 @@ async function deleteItem(id) {
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ user: currentUser }) // 🔥 IMPORTANT
+    body: JSON.stringify({ user: currentUser })
   });
 
   loadItems(currentType);
 }
 
 /* PREVIEW */
-image.addEventListener("change",(e)=>{
+document.getElementById("image").addEventListener("change",(e)=>{
+  const preview = document.getElementById("preview");
   preview.src = URL.createObjectURL(e.target.files[0]);
   preview.style.display="block";
 });
