@@ -118,7 +118,9 @@ let currentType = "lost";
 let currentItem = null;
 
 // ✅ SOCKET AFTER API
-const socket = io(API);
+const socket = io(API, {
+  transports: ["polling"]
+});
 
 /* NAVIGATION */
 function showPage(type) {
