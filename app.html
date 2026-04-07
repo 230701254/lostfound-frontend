@@ -90,6 +90,17 @@ body {
       <h2 id="pageTitle"></h2>
       <div id="items" class="grid"></div>
     </div>
+    <div id="uploadPage" class="hidden">
+  <h2>Upload Item</h2>
+
+  <input id="name" placeholder="Item name"><br><br>
+  <input id="desc" placeholder="Description"><br><br>
+  <input id="loc" placeholder="Location"><br><br>
+  <input type="file" id="img"><br><br>
+
+  <button onclick="uploadItem('lost')">Upload Lost</button>
+  <button onclick="uploadItem('found')">Upload Found</button>
+</div>
 
     <!-- CHAT -->
     <div id="chatSection" class="hidden">
