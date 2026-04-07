@@ -12,23 +12,16 @@ body {
   color: #e5e5e5;
 }
 
-/* LAYOUT */
 .layout {
   display: grid;
   grid-template-columns: 230px 1fr;
 }
 
-/* SIDEBAR */
 .sidebar {
   height: 100vh;
   background: #050505;
   border-right: 1px solid #1a1a1a;
   padding: 20px;
-}
-
-.sidebar h2 {
-  margin-bottom: 25px;
-  font-size: 18px;
 }
 
 .sidebar a {
@@ -45,59 +38,10 @@ body {
   color: white;
 }
 
-/* MAIN */
 .main {
   padding: 25px;
 }
 
-/* TOPBAR */
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.search-box {
-  background: #111;
-  border: 1px solid #222;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-}
-
-/* HERO */
-.hero {
-  background: #0f0f0f;
-  border: 1px solid #1a1a1a;
-  padding: 25px;
-  border-radius: 12px;
-}
-
-.hero h1 {
-  margin: 0;
-  font-size: 24px;
-}
-
-.hero p {
-  color: #888;
-}
-
-/* BUTTON */
-button {
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #222;
-  background: #111;
-  color: white;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #1a1a1a;
-}
-
-/* GRID */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(260px,1fr));
@@ -105,18 +49,11 @@ button:hover {
   margin-top: 20px;
 }
 
-/* CARD */
 .card {
   background: #050505;
   border: 1px solid #1a1a1a;
   border-radius: 12px;
   overflow: hidden;
-  transition: 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  border-color: #333;
 }
 
 .card img {
@@ -129,90 +66,118 @@ button:hover {
   padding: 14px;
 }
 
-.content h3 {
-  margin: 5px 0;
-}
-
-.content p {
-  color: #888;
-  font-size: 14px;
-}
-
-/* BADGE */
-.badge {
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-
-.lost {
-  background: #2a0a0a;
-  color: #ff4d4d;
-}
-
-.found {
-  background: #0a2a1a;
-  color: #22c55e;
-}
-
-/* DELETE */
-.delete-btn {
-  background: #1a0a0a;
-  border: 1px solid #330000;
-  color: #ff4d4d;
-  margin-top: 10px;
-}
-
-/* UPLOAD */
-.upload-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 40px;
-}
-
-.upload-card {
-  width: 420px;
-  background: #050505;
-  padding: 25px;
-  border-radius: 12px;
-  border: 1px solid #1a1a1a;
-}
-
-.upload-card input,
-.upload-card select {
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 10px;
-  background: #111;
-  border: 1px solid #222;
-  color: white;
-  border-radius: 8px;
-}
-
-.upload-card button {
-  width: 100%;
-}
-
-/* HIDDEN */
 .hidden {
   display: none;
 }
 </style>
 </head>
+
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>📦 Lost & Found</h2>
+    <a onclick="showPage('dashboard')">Dashboard</a>
+    <a onclick="showPage('lost')">Lost</a>
+    <a onclick="showPage('found')">Found</a>
+    <a onclick="showPage('upload')">Upload</a>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div id="dashboardPage">
+      <h2>Recent Items</h2>
+      <div id="recentItems" class="grid"></div>
+    </div>
+
+    <div id="itemsPage" class="hidden">
+      <h2 id="pageTitle"></h2>
+      <div id="items" class="grid"></div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="chatSection" class="hidden">
+      <h3>💬 Chat</h3>
+      <div id="chatBox" style="height:250px;overflow:auto;border:1px solid #333;padding:10px"></div>
+
+      <div style="margin-top:10px;display:flex;gap:10px;">
+        <input id="msg" placeholder="Type message..." style="flex:1;" />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SOCKET LIB -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
+<!-- MAIN SCRIPT -->
 <script>
+const API = "https://lostfound-backend-52mp.onrender.com";
+
+let currentUser = "test@rajalakshmi.edu.in"; // temp for testing
+let currentData = [];
+let currentType = "lost";
+let currentItem = null;
+
+// ✅ SOCKET INIT AFTER API
 const socket = io(API, {
   transports: ["websocket"]
 });
 
-let currentItem = null;
+/* NAVIGATION */
+function showPage(page) {
+  document.getElementById("dashboardPage").classList.add("hidden");
+  document.getElementById("itemsPage").classList.add("hidden");
 
+  if (page === "dashboard") {
+    document.getElementById("dashboardPage").classList.remove("hidden");
+    loadRecent();
+  }
+
+  if (page === "lost" || page === "found") {
+    document.getElementById("itemsPage").classList.remove("hidden");
+    document.getElementById("pageTitle").innerText = page.toUpperCase();
+    currentType = page;
+    loadItems(page);
+  }
+}
+
+/* LOAD ITEMS */
+async function loadItems(type) {
+  const data = await fetch(API+"/"+type).then(r=>r.json());
+  currentData = data;
+  render(data);
+}
+
+function render(data) {
+  const container = document.getElementById("items");
+  container.innerHTML = "";
+
+  data.forEach(item => {
+    container.innerHTML += `
+      <div class="card">
+        <img src="${item.imageUrl}">
+        <div class="content">
+          <h3>${item.name}</h3>
+          <p>${item.description}</p>
+
+          <button onclick="openChat('${item.id}')">💬 Chat</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+/* CHAT FUNCTIONS */
 async function openChat(itemId) {
-  console.log("Chat clicked:", itemId); // debug
+  console.log("Chat clicked:", itemId);
 
   currentItem = itemId;
-
   document.getElementById("chatSection").classList.remove("hidden");
 
   socket.emit("joinRoom", { itemId });
@@ -222,7 +187,6 @@ async function openChat(itemId) {
 
 function sendMessage() {
   const msg = document.getElementById("msg").value;
-
   if (!msg) return;
 
   socket.emit("sendMessage", {
@@ -252,292 +216,14 @@ function displayMessage(msg) {
   const chatBox = document.getElementById("chatBox");
 
   chatBox.innerHTML += `
-    <div style="margin-bottom:10px;">
-      <b>${msg.sender}</b><br/>
-      ${msg.message}
-    </div>
+    <p><b>${msg.sender}</b>: ${msg.message}</p>
   `;
 
   chatBox.scrollTop = chatBox.scrollHeight;
 }
-</script>
-<body>
-
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <h2>📦 Lost & Found</h2>
-    <a onclick="showPage('dashboard')">Dashboard</a>
-    <a onclick="showPage('lost')">Lost</a>
-    <a onclick="showPage('found')">Found</a>
-    <a onclick="showPage('upload')">Upload</a>
-  </div>
-
-  <!-- MAIN -->
-  <div class="main">
-
-    <div class="topbar">
-      <div id="userArea"></div>
-      <input id="search" class="search-box hidden" placeholder="Search..." />
-      <button onclick="logout()">Logout</button>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div id="dashboardPage">
-      <div class="hero">
-        <h1>Welcome back 👋</h1>
-        <p>Manage lost and found items efficiently.</p>
-
-        <button onclick="showPage('lost')">Browse Lost</button>
-        <button onclick="showPage('found')">Browse Found</button>
-        <button onclick="showPage('upload')">Upload</button>
-      </div>
-
-      <h2 style="margin-top:30px;">Recent Items</h2>
-      <div id="recentItems" class="grid"></div>
-    </div>
-
-    <!-- UPLOAD -->
-    <div id="uploadPage" class="hidden">
-      <div class="upload-container">
-        <div class="upload-card">
-          <h2>Add Item</h2>
-
-          <form id="itemForm">
-            <input id="name" placeholder="Name" required />
-            <input id="description" placeholder="Description" required />
-            <input id="location" placeholder="Location" required />
-
-            <select id="type">
-              <option value="lost">Lost</option>
-              <option value="found">Found</option>
-            </select>
-
-            <input type="file" id="image" required />
-            <img id="preview" style="display:none;max-height:120px" />
-
-            <button type="submit">Upload Item</button>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- ITEMS -->
-    <div id="itemsPage" class="hidden">
-      <h2 id="pageTitle"></h2>
-      <div id="items" class="grid"></div>
-    </div>
-    <div id="chatSection" class="hidden" style="margin-top:20px;">
-  <h3>💬 Chat</h3>
-
-  <div id="chatBox" style="
-    height:250px;
-    overflow:auto;
-    border:1px solid #222;
-    padding:10px;
-    border-radius:10px;
-    background:#0a0a0a;
-  "></div>
-
-  <div style="margin-top:10px;display:flex;gap:10px;">
-    <input id="msg" placeholder="Type message..." style="flex:1;" />
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
-  </div>
-</div>
-
-<!-- ONLY SCRIPT PART UPDATED, UI SAME -->
-
-<script>
-const API = "https://lostfound-backend-52mp.onrender.com";
-const ALLOWED_DOMAIN = "@rajalakshmi.edu.in";
-
-let currentUser = null;
-let currentData = [];
-let currentType = "lost";
-
-/* 🔐 AUTH */
-async function checkAuth() {
-  try {
-    const res = await fetch("/.auth/me");
-    const data = await res.json();
-
-    if (!data.clientPrincipal) {
-      window.location.href = "/login";
-      return;
-    }
-
-    const user = data.clientPrincipal;
-
-    if (!user.userDetails.endsWith(ALLOWED_DOMAIN)) {
-      alert("Only college email allowed");
-      window.location.href = "/logout";
-      return;
-    }
-
-    currentUser = user.userDetails;
-    document.getElementById("userArea").innerText = "👤 " + currentUser;
-
-    showPage("dashboard");
-
-  } catch {
-    alert("Auth error");
-  }
-}
-
-/* NAVIGATION */
-function showPage(page) {
-  ["dashboardPage","uploadPage","itemsPage"].forEach(id =>
-    document.getElementById(id).classList.add("hidden")
-  );
-
-  document.getElementById("search").classList.add("hidden");
-
-  if (page === "dashboard") {
-    document.getElementById("dashboardPage").classList.remove("hidden");
-    loadRecent();
-  }
-
-  if (page === "upload") {
-    document.getElementById("uploadPage").classList.remove("hidden");
-  }
-
-  if (page === "lost" || page === "found") {
-    document.getElementById("itemsPage").classList.remove("hidden");
-    document.getElementById("pageTitle").innerText = page.toUpperCase();
-    currentType = page;
-    document.getElementById("search").classList.remove("hidden");
-    loadItems(page);
-  }
-}
-
-/* LOAD DATA */
-async function loadRecent() {
-  const lost = await fetch(API+"/lost").then(r=>r.json());
-  const found = await fetch(API+"/found").then(r=>r.json());
-
-  const combined = [...lost, ...found].slice(0,4);
-
-  const container = document.getElementById("recentItems");
-  container.innerHTML = "";
-
-  combined.forEach(item => {
-    container.innerHTML += `
-      <div class="card">
-        <img src="${item.imageUrl}">
-        <div class="content">
-          <h3>${item.name || "No Name"}</h3>
-          <p>${item.location || "No Location"}</p>
-        </div>
-      </div>
-    `;
-  });
-}
-
-async function loadItems(type) {
-  const data = await fetch(API+"/"+type).then(r=>r.json());
-  currentData = data;
-  render(data);
-}
-
-function render(data) {
-  const container = document.getElementById("items");
-  container.innerHTML = "";
-
-  data.forEach(item => {
-    container.innerHTML += `
-      <div class="card">
-        <img src="${item.imageUrl}">
-        <div class="content">
-          <span class="badge ${currentType}">${currentType}</span>
-          <h3>${item.name || "No Name"}</h3>
-          <p>${item.description || ""}</p>
-          <p>📍 ${item.location || "Unknown"}</p>
-
-          <button onclick="openChat('${item.id}')">💬 Chat</button>
-
-            ${item.user === currentUser ? `
-              <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
-            ` : ""}
-        </div>
-      </div>
-    `;
-  });
-}
-
-/* SEARCH */
-document.getElementById("search").addEventListener("input", (e) => {
-  const val = e.target.value.toLowerCase();
-
-  render(currentData.filter(item =>
-    (item.name || "").toLowerCase().includes(val) ||
-    (item.location || "").toLowerCase().includes(val)
-  ));
-});
-
-/* 🔥 FIXED UPLOAD (MAIN BUG FIX HERE) */
-document.getElementById("itemForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const nameInput = document.getElementById("name");
-  const descInput = document.getElementById("description");
-  const locInput = document.getElementById("location");
-  const imageInput = document.getElementById("image");
-
-  const formData = new FormData();
-  formData.append("name", nameInput.value);
-  formData.append("description", descInput.value);
-  formData.append("location", locInput.value);
-  formData.append("image", imageInput.files[0]);
-  formData.append("user", currentUser);
-
-  const type = document.getElementById("type").value;
-
-  await fetch(API+"/"+type, {
-    method: "POST",
-    body: formData
-  });
-
-  alert("Uploaded!");
-
-  // reset form
-  e.target.reset();
-  document.getElementById("preview").style.display = "none";
-
-  showPage(type);
-});
-
-/* DELETE */
-async function deleteItem(id) {
-  if (!confirm("Delete?")) return;
-
-  await fetch(API+"/"+currentType+"/"+id, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ user: currentUser })
-  });
-
-  loadItems(currentType);
-}
-
-/* PREVIEW */
-document.getElementById("image").addEventListener("change",(e)=>{
-  const preview = document.getElementById("preview");
-  preview.src = URL.createObjectURL(e.target.files[0]);
-  preview.style.display="block";
-});
-
-/* LOGOUT */
-function logout(){
-  window.location.href="/logout";
-}
 
 /* INIT */
-checkAuth();
+showPage("dashboard");
 </script>
 
 </body>
