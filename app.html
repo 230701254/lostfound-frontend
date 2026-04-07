@@ -199,7 +199,59 @@ button:hover {
 }
 </style>
 </head>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js">
+  const socket = io(API, {
+  transports: ["websocket"]
+});
 
+let currentItem = null;
+async function openChat(itemId) {
+  currentItem = itemId;
+
+  document.getElementById("chatSection").classList.remove("hidden");
+
+  socket.emit("joinRoom", { itemId });
+
+  loadChatHistory(itemId);
+}
+function sendMessage() {
+  const msg = document.getElementById("msg").value;
+
+  if (!msg) return;
+
+  socket.emit("sendMessage", {
+    itemId: currentItem,
+    message: msg,
+    user: currentUser
+  });
+
+  document.getElementById("msg").value = "";
+}
+socket.on("receiveMessage", (data) => {
+  displayMessage(data);
+});
+async function loadChatHistory(itemId) {
+  const res = await fetch(API + "/messages/" + itemId);
+  const data = await res.json();
+
+  const chatBox = document.getElementById("chatBox");
+  chatBox.innerHTML = "";
+
+  data.forEach(displayMessage);
+}
+function displayMessage(msg) {
+  const chatBox = document.getElementById("chatBox");
+
+  chatBox.innerHTML += `
+    <div style="margin-bottom:10px;">
+      <b>${msg.sender}</b><br/>
+      ${msg.message}
+    </div>
+  `;
+
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+</script>
 <body>
 
 <div class="layout">
@@ -267,7 +319,23 @@ button:hover {
       <h2 id="pageTitle"></h2>
       <div id="items" class="grid"></div>
     </div>
+    <div id="chatSection" class="hidden" style="margin-top:20px;">
+  <h3>💬 Chat</h3>
 
+  <div id="chatBox" style="
+    height:250px;
+    overflow:auto;
+    border:1px solid #222;
+    padding:10px;
+    border-radius:10px;
+    background:#0a0a0a;
+  "></div>
+
+  <div style="margin-top:10px;display:flex;gap:10px;">
+    <input id="msg" placeholder="Type message..." style="flex:1;" />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
   </div>
 </div>
 
@@ -379,9 +447,11 @@ function render(data) {
           <p>${item.description || ""}</p>
           <p>📍 ${item.location || "Unknown"}</p>
 
-          ${item.user === currentUser ? `
-            <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
-          ` : ""}
+          <button onclick="openChat('${item.id}')">💬 Chat</button>
+
+            ${item.user === currentUser ? `
+              <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
+            ` : ""}
         </div>
       </div>
     `;
