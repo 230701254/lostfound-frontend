@@ -199,13 +199,18 @@ button:hover {
 }
 </style>
 </head>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js">
-  const socket = io(API, {
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+const socket = io(API, {
   transports: ["websocket"]
 });
 
 let currentItem = null;
+
 async function openChat(itemId) {
+  console.log("Chat clicked:", itemId); // debug
+
   currentItem = itemId;
 
   document.getElementById("chatSection").classList.remove("hidden");
@@ -214,6 +219,7 @@ async function openChat(itemId) {
 
   loadChatHistory(itemId);
 }
+
 function sendMessage() {
   const msg = document.getElementById("msg").value;
 
@@ -227,9 +233,11 @@ function sendMessage() {
 
   document.getElementById("msg").value = "";
 }
+
 socket.on("receiveMessage", (data) => {
   displayMessage(data);
 });
+
 async function loadChatHistory(itemId) {
   const res = await fetch(API + "/messages/" + itemId);
   const data = await res.json();
@@ -239,6 +247,7 @@ async function loadChatHistory(itemId) {
 
   data.forEach(displayMessage);
 }
+
 function displayMessage(msg) {
   const chatBox = document.getElementById("chatBox");
 
