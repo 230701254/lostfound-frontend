@@ -118,9 +118,7 @@ let currentType = "lost";
 let currentItem = null;
 
 // ✅ SOCKET AFTER API
-const socket = io(API, {
-  transports: ["websocket"]
-});
+const socket = io(API);
 
 /* NAVIGATION */
 function showPage(type) {
