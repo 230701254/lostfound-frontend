@@ -69,6 +69,24 @@ body {
 .hidden {
   display: none;
 }
+
+.chat-box {
+  height: 250px;
+  overflow: auto;
+  border: 1px solid #333;
+  padding: 10px;
+  background: #050505;
+}
+
+.my-msg {
+  text-align: right;
+  color: #4ade80;
+}
+
+.other-msg {
+  text-align: left;
+  color: #60a5fa;
+}
 </style>
 </head>
 
@@ -81,31 +99,36 @@ body {
     <h2>📦 Lost & Found</h2>
     <a onclick="showPage('lost')">Lost</a>
     <a onclick="showPage('found')">Found</a>
+    <a onclick="showPage('upload')">Upload</a>
   </div>
 
   <!-- MAIN -->
   <div class="main">
 
+    <!-- ITEMS -->
     <div id="itemsPage">
       <h2 id="pageTitle"></h2>
       <div id="items" class="grid"></div>
     </div>
+
+    <!-- UPLOAD -->
     <div id="uploadPage" class="hidden">
-  <h2>Upload Item</h2>
+      <h2>Upload Item</h2>
 
-  <input id="name" placeholder="Item name"><br><br>
-  <input id="desc" placeholder="Description"><br><br>
-  <input id="loc" placeholder="Location"><br><br>
-  <input type="file" id="img"><br><br>
+      <input id="name" placeholder="Item name"><br><br>
+      <input id="desc" placeholder="Description"><br><br>
+      <input id="loc" placeholder="Location"><br><br>
+      <input type="file" id="img"><br><br>
 
-  <button onclick="uploadItem('lost')">Upload Lost</button>
-  <button onclick="uploadItem('found')">Upload Found</button>
-</div>
+      <button onclick="uploadItem('lost')">Upload Lost</button>
+      <button onclick="uploadItem('found')">Upload Found</button>
+    </div>
 
     <!-- CHAT -->
     <div id="chatSection" class="hidden">
       <h3>💬 Chat</h3>
-      <div id="chatBox" style="height:250px;overflow:auto;border:1px solid #333;padding:10px"></div>
+
+      <div id="chatBox" class="chat-box"></div>
 
       <div style="margin-top:10px;display:flex;gap:10px;">
         <input id="msg" placeholder="Type message..." style="flex:1;" />
@@ -116,37 +139,45 @@ body {
   </div>
 </div>
 
-<!-- SOCKET LIB -->
+<!-- SOCKET -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-<!-- MAIN SCRIPT -->
 <script>
 const API = "https://lostfound-backend-52mp.onrender.com";
 
 let currentUser = "test@rajalakshmi.edu.in";
-let currentData = [];
 let currentType = "lost";
 let currentItem = null;
 
-// ✅ SOCKET AFTER API
+// 🔥 SOCKET (polling for Render)
 const socket = io(API, {
   transports: ["polling"]
 });
 
 /* NAVIGATION */
-function showPage(type) {
-  currentType = type;
-  document.getElementById("pageTitle").innerText = type.toUpperCase();
-  loadItems(type);
+function showPage(page) {
+  document.getElementById("itemsPage").classList.add("hidden");
+  document.getElementById("uploadPage").classList.add("hidden");
+
+  if (page === "upload") {
+    document.getElementById("uploadPage").classList.remove("hidden");
+    return;
+  }
+
+  document.getElementById("itemsPage").classList.remove("hidden");
+  document.getElementById("pageTitle").innerText = page.toUpperCase();
+
+  currentType = page;
+  loadItems(page);
 }
 
 /* LOAD ITEMS */
 async function loadItems(type) {
-  const data = await fetch(API+"/"+type).then(r=>r.json());
-  currentData = data;
+  const data = await fetch(API + "/" + type).then(r => r.json());
   render(data);
 }
 
+/* RENDER */
 function render(data) {
   const container = document.getElementById("items");
   container.innerHTML = "";
@@ -158,6 +189,7 @@ function render(data) {
         <div class="content">
           <h3>${item.name}</h3>
           <p>${item.description}</p>
+          <p>📍 ${item.location}</p>
 
           <button onclick="openChat('${item.id}')">💬 Chat</button>
         </div>
@@ -166,12 +198,30 @@ function render(data) {
   });
 }
 
+/* UPLOAD */
+async function uploadItem(type) {
+  const formData = new FormData();
+
+  formData.append("name", document.getElementById("name").value);
+  formData.append("description", document.getElementById("desc").value);
+  formData.append("location", document.getElementById("loc").value);
+  formData.append("image", document.getElementById("img").files[0]);
+
+  await fetch(API + "/" + type, {
+    method: "POST",
+    body: formData
+  });
+
+  alert("Uploaded!");
+  showPage(type);
+}
+
 /* CHAT */
 function openChat(itemId) {
-  console.log("Chat clicked:", itemId);
-
   currentItem = itemId;
+
   document.getElementById("chatSection").classList.remove("hidden");
+  document.getElementById("chatSection").scrollIntoView({ behavior: "smooth" });
 
   socket.emit("joinRoom", { itemId });
 
@@ -195,21 +245,32 @@ socket.on("receiveMessage", (data) => {
   displayMessage(data);
 });
 
+/* LOAD CHAT */
 async function loadChatHistory(itemId) {
-  const res = await fetch(API + "/messages/" + itemId);
-  const data = await res.json();
+  try {
+    const res = await fetch(API + "/messages/" + itemId);
+    const data = await res.json();
 
-  const chatBox = document.getElementById("chatBox");
-  chatBox.innerHTML = "";
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML = "";
 
-  data.forEach(displayMessage);
+    data.forEach(displayMessage);
+  } catch (err) {
+    console.error("Chat load error", err);
+  }
 }
 
+/* DISPLAY MESSAGE */
 function displayMessage(msg) {
   const chatBox = document.getElementById("chatBox");
 
+  const cls = msg.sender === currentUser ? "my-msg" : "other-msg";
+
   chatBox.innerHTML += `
-    <p><b>${msg.sender}</b>: ${msg.message}</p>
+    <div class="${cls}">
+      <b>${msg.sender}</b><br/>
+      ${msg.message}
+    </div>
   `;
 
   chatBox.scrollTop = chatBox.scrollHeight;
