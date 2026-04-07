@@ -79,21 +79,14 @@ body {
   <!-- SIDEBAR -->
   <div class="sidebar">
     <h2>📦 Lost & Found</h2>
-    <a onclick="showPage('dashboard')">Dashboard</a>
     <a onclick="showPage('lost')">Lost</a>
     <a onclick="showPage('found')">Found</a>
-    <a onclick="showPage('upload')">Upload</a>
   </div>
 
   <!-- MAIN -->
   <div class="main">
 
-    <div id="dashboardPage">
-      <h2>Recent Items</h2>
-      <div id="recentItems" class="grid"></div>
-    </div>
-
-    <div id="itemsPage" class="hidden">
+    <div id="itemsPage">
       <h2 id="pageTitle"></h2>
       <div id="items" class="grid"></div>
     </div>
@@ -119,32 +112,21 @@ body {
 <script>
 const API = "https://lostfound-backend-52mp.onrender.com";
 
-let currentUser = "test@rajalakshmi.edu.in"; // temp for testing
+let currentUser = "test@rajalakshmi.edu.in";
 let currentData = [];
 let currentType = "lost";
 let currentItem = null;
 
-// ✅ SOCKET INIT AFTER API
+// ✅ SOCKET AFTER API
 const socket = io(API, {
   transports: ["websocket"]
 });
 
 /* NAVIGATION */
-function showPage(page) {
-  document.getElementById("dashboardPage").classList.add("hidden");
-  document.getElementById("itemsPage").classList.add("hidden");
-
-  if (page === "dashboard") {
-    document.getElementById("dashboardPage").classList.remove("hidden");
-    loadRecent();
-  }
-
-  if (page === "lost" || page === "found") {
-    document.getElementById("itemsPage").classList.remove("hidden");
-    document.getElementById("pageTitle").innerText = page.toUpperCase();
-    currentType = page;
-    loadItems(page);
-  }
+function showPage(type) {
+  currentType = type;
+  document.getElementById("pageTitle").innerText = type.toUpperCase();
+  loadItems(type);
 }
 
 /* LOAD ITEMS */
@@ -173,8 +155,8 @@ function render(data) {
   });
 }
 
-/* CHAT FUNCTIONS */
-async function openChat(itemId) {
+/* CHAT */
+function openChat(itemId) {
   console.log("Chat clicked:", itemId);
 
   currentItem = itemId;
@@ -223,7 +205,7 @@ function displayMessage(msg) {
 }
 
 /* INIT */
-showPage("dashboard");
+showPage("lost");
 </script>
 
 </body>
