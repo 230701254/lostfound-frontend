@@ -1,4 +1,3 @@
-<!-- redeploy -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,13 +45,44 @@ button {
   <h1>📦 Lost & Found</h1>
   <p>Report and find lost items in campus</p>
 
-  <button onclick="login()">Sign in with Google</button>
+  <button onclick="login()">Sign in</button>
 </div>
 
 <script>
+const BLOCKED_USER = "230701246@rajalakshmi.edu.in";
+
+/* 🔐 CHECK IF ALREADY LOGGED IN */
+async function checkUser() {
+  try {
+    const res = await fetch("/.auth/me");
+    const data = await res.json();
+
+    if (data && data.clientPrincipal) {
+      const user = data.clientPrincipal.userDetails;
+
+      // 🚫 BLOCK USER
+      if (user === BLOCKED_USER) {
+        alert("Access denied ❌");
+        window.location.href = "/logout";
+        return;
+      }
+
+      // ✅ Redirect valid user
+      window.location.href = "/app.html";
+    }
+
+  } catch (err) {
+    console.log("Auth check failed");
+  }
+}
+
+/* 🔑 LOGIN */
 function login() {
   window.location.href = "/login";
 }
+
+/* INIT */
+checkUser();
 </script>
 
 </body>

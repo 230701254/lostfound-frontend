@@ -118,7 +118,6 @@ button {
 
 <div class="layout">
 
-<!-- SIDEBAR -->
 <div class="sidebar">
   <h2>📦 Lost & Found</h2>
   <a onclick="showPage('dashboard')">Dashboard</a>
@@ -127,7 +126,6 @@ button {
   <a onclick="showPage('upload')">Upload</a>
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
 <div class="topbar">
@@ -135,44 +133,28 @@ button {
   <button onclick="logout()">Logout</button>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dashboardPage">
   <div class="hero">
     <h1>Welcome back 👋</h1>
-    <p>Manage lost & found items efficiently.</p>
-    <button onclick="showPage('lost')">Browse Lost</button>
-    <button onclick="showPage('found')">Browse Found</button>
-    <button onclick="showPage('upload')">Upload</button>
   </div>
-
-  <h2 style="margin-top:30px;">Recent Items</h2>
-  <div id="recentItems" class="grid"></div>
+  <h2>Items</h2>
+  <div id="items" class="grid"></div>
 </div>
 
-<!-- UPLOAD -->
 <div id="uploadPage" class="hidden">
   <div class="upload-card">
-    <h2>Add Item</h2>
     <form id="itemForm">
       <input id="name" placeholder="Name" required />
       <input id="description" placeholder="Description" required />
       <input id="location" placeholder="Location" required />
-
       <select id="type">
         <option value="lost">Lost</option>
         <option value="found">Found</option>
       </select>
-
       <input type="file" id="image" required />
       <button type="submit">Upload</button>
     </form>
   </div>
-</div>
-
-<!-- ITEMS -->
-<div id="itemsPage" class="hidden">
-  <h2 id="pageTitle"></h2>
-  <div id="items" class="grid"></div>
 </div>
 
 </div>
@@ -180,129 +162,90 @@ button {
 
 <script>
 const API = "https://lostfound-backend-52mp.onrender.com";
+const BLOCKED_USER = "230701246@rajalakshmi.edu.in";
+
 let currentUser = null;
 let currentType = "lost";
 
-/* 🔐 AUTH FIX */
+/* AUTH */
 async function checkAuth() {
-  try {
-    const res = await fetch("/.auth/me");
-    const data = await res.json();
+  const res = await fetch("/.auth/me");
+  const data = await res.json();
 
-    if (!data || !data.clientPrincipal) {
-      setTimeout(checkAuth, 1000);
-      return;
-    }
+  if (!data.clientPrincipal) return;
 
-    currentUser = data.clientPrincipal.userDetails;
-    document.getElementById("userArea").innerText = "👤 " + currentUser;
+  const user = data.clientPrincipal.userDetails;
 
-    showPage("dashboard");
-
-  } catch {
-    setTimeout(checkAuth, 1000);
+  if (user === BLOCKED_USER) {
+    alert("Access denied ❌");
+    window.location.href = "/logout";
+    return;
   }
+
+  currentUser = user;
+  userArea.innerText = "👤 " + user;
+
+  loadItems();
 }
 
-/* NAV */
-function showPage(page){
-  ["dashboardPage","uploadPage","itemsPage"].forEach(id =>
-    document.getElementById(id).classList.add("hidden")
-  );
+/* LOAD ITEMS */
+async function loadItems(){
+  const data = await fetch(API+"/lost").then(r=>r.json());
 
-  if(page==="dashboard"){
-    document.getElementById("dashboardPage").classList.remove("hidden");
-  }
+  items.innerHTML = "";
 
-  if(page==="upload"){
-    document.getElementById("uploadPage").classList.remove("hidden");
-  }
+  data.forEach(item=>{
+    items.innerHTML += `
+      <div class="card">
+        <img src="${item.imageUrl}">
+        <div class="content">
+          <h3>${item.name}</h3>
+          <p>${item.location}</p>
 
-  if(page==="lost" || page==="found"){
-    currentType = page;
-    document.getElementById("itemsPage").classList.remove("hidden");
-    document.getElementById("pageTitle").innerText = page.toUpperCase();
-    loadItems(page);
-  }
-}
+          ${item.user !== currentUser ? `
+            <button class="chat-btn"
+              onclick="openChat('${item.id}')">💬 Chat</button>` : ""}
 
-/* LOAD */
-async function loadItems(type){
-  const data = await fetch(API+"/"+type).then(r=>r.json());
-  render(data);
-}
-
-/* 🔥 UPDATED CARD UI */
-function render(data){
-  const container = document.getElementById("items");
-  container.innerHTML = "";
-
-  data.forEach(item => {
-    container.innerHTML += `
-    <div class="card">
-      <img src="${item.imageUrl}">
-      <div class="content">
-
-        <span class="badge ${currentType}">${currentType}</span>
-
-        <h3>${item.name || "No Name"}</h3>
-        <p>${item.description || ""}</p>
-        <p>📍 ${item.location || "Unknown"}</p>
-
-        ${item.user !== currentUser ? `
-          <button class="chat-btn"
-            onclick="openChat('${item.id}','${item.user}')">
-            💬 Chat Owner
-          </button>
-        ` : ""}
-
-        ${item.user === currentUser ? `
-          <button class="delete-btn"
-            onclick="deleteItem('${item.id}')">
-            🗑 Delete
-          </button>
-        ` : ""}
-
+          ${item.user === currentUser ? `
+            <button class="delete-btn"
+              onclick="deleteItem('${item.id}')">Delete</button>` : ""}
+        </div>
       </div>
-    </div>
     `;
   });
 }
 
 /* CHAT */
-function openChat(itemId, owner){
-  window.location.href = `chat.html?itemId=${itemId}&user=${owner}`;
+function openChat(id){
+  window.location.href = "chat.html?itemId=" + id;
 }
-
-/* UPLOAD */
-document.getElementById("itemForm").addEventListener("submit", async (e)=>{
-  e.preventDefault();
-
-  const fd = new FormData();
-  fd.append("name", document.getElementById("name").value);
-  fd.append("description", document.getElementById("description").value);
-  fd.append("location", document.getElementById("location").value);
-  fd.append("image", document.getElementById("image").files[0]);
-  fd.append("user", currentUser);
-
-  const type = document.getElementById("type").value;
-
-  await fetch(API+"/"+type,{ method:"POST", body:fd });
-
-  alert("Uploaded!");
-  showPage(type);
-});
 
 /* DELETE */
 async function deleteItem(id){
-  await fetch(API+"/"+currentType+"/"+id,{
+  await fetch(API+"/lost/"+id,{
     method:"DELETE",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ user: currentUser })
+    body:JSON.stringify({ user: currentUser })
   });
-
-  loadItems(currentType);
+  loadItems();
 }
+
+/* UPLOAD */
+itemForm.addEventListener("submit", async e=>{
+  e.preventDefault();
+
+  const fd = new FormData();
+  fd.append("name", name.value);
+  fd.append("description", description.value);
+  fd.append("location", location.value);
+  fd.append("image", image.files[0]);
+  fd.append("user", currentUser);
+
+  await fetch(API+"/lost",{ method:"POST", body:fd });
+
+  alert("Uploaded");
+  loadItems();
+});
 
 /* LOGOUT */
 function logout(){
