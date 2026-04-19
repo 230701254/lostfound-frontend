@@ -1122,7 +1122,7 @@ function renderItems(items, gridId) {
         <div class="card-location">📍 ${escHtml(item.location)}</div>
         <div class="card-desc">${escHtml(item.description)}</div>
         <div class="card-footer">
-          ${!isOwner ? `<button class="btn btn-chat" onclick="event.stopPropagation();goChat('${item.id}')">💬 Chat</button>` : ""}
+          <button class="btn btn-chat" onclick="event.stopPropagation();goChat('${item.id}')">💬 Chat</button>
           ${isOwner ? `<button class="btn btn-delete" onclick="event.stopPropagation();deleteItem('${item.id}','${item.type}')">🗑 Delete</button>` : ""}
           <span class="card-time">${timeAgo}</span>
         </div>
@@ -1169,25 +1169,25 @@ function openModal(item) {
   const actions = document.getElementById("modalActions");
   actions.innerHTML = "";
 
-  if (!isOwner) {
-    const chatBtn = document.createElement("button");
-    chatBtn.className = "btn btn-chat";
-    chatBtn.style.fontSize = "14px";
-    chatBtn.style.padding = "10px 20px";
-    chatBtn.innerHTML = "💬 Chat with poster";
-    chatBtn.onclick = () => goChat(item.id);
-    actions.appendChild(chatBtn);
-  }
+  // Chat button for everyone
+const chatBtn = document.createElement("button");
+chatBtn.className = "btn btn-chat";
+chatBtn.style.fontSize = "14px";
+chatBtn.style.padding = "10px 20px";
+chatBtn.innerHTML = "💬 Chat";
+chatBtn.onclick = () => goChat(item.id);
+actions.appendChild(chatBtn);
 
-  if (isOwner) {
-    const delBtn = document.createElement("button");
-    delBtn.className = "btn btn-delete";
-    delBtn.style.fontSize = "14px";
-    delBtn.style.padding = "10px 20px";
-    delBtn.innerHTML = "🗑 Delete item";
-    delBtn.onclick = () => { closeModalDirect(); deleteItem(item.id, item.type); };
-    actions.appendChild(delBtn);
-  }
+// Delete only for owner
+if (isOwner) {
+  const delBtn = document.createElement("button");
+  delBtn.className = "btn btn-delete";
+  delBtn.style.fontSize = "14px";
+  delBtn.style.padding = "10px 20px";
+  delBtn.innerHTML = "🗑 Delete item";
+  delBtn.onclick = () => { closeModalDirect(); deleteItem(item.id, item.type); };
+  actions.appendChild(delBtn);
+}
 
   document.getElementById("itemModal").classList.add("show");
   document.body.style.overflow = "hidden";
