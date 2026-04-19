@@ -18,7 +18,7 @@
     },
     {
       "route": "/login",
-      "redirect": "/.auth/login/google?post_login_redirect_uri=/app.html"
+      "redirect": "/.auth/login/aad?post_login_redirect_uri=/app.html"
     }
   ],
   "navigationFallback": {
