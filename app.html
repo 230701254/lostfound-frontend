@@ -1068,13 +1068,14 @@ function findMatches(category, type) {
         })
       });
 
-      const matches = await res.json();
+      const data = await res.json();
 
-      console.log("🔥 MATCHES:", matches);
+      console.log("🔥 MATCHES:", data);
 
-      showMatches(matches);
+      // 🔥 IMPORTANT CHANGE
+      showMatches(data.matches || []);
 
-      resolve(matches);
+      resolve(data.matches || []);
     } catch (err) {
       reject(err);
     }
