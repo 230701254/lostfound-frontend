@@ -1054,6 +1054,45 @@ async function loadDashboard() {
   }
 }
 
+function findMatches(file, category, type) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result.split(",")[1];
+
+        const res = await fetch(API + "/match", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            imageBase64: base64,
+            category,
+            type
+          })
+        });
+
+        const matches = await res.json();
+
+        console.log("🔥 MATCHES:", matches);
+
+        showMatches(matches);
+
+        resolve(matches); // ✅ IMPORTANT
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+  });
+}
+
+
 async function loadItems(type) {
   const gridId = type + "Grid";
   setGridLoading(gridId);
@@ -1267,25 +1306,45 @@ async function submitItem() {
 
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
-  btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Uploading…`;
-
-  const fd = new FormData();
-  fd.append("name", name);
-  fd.append("description", description);
-  fd.append("location", location);
-  fd.append("user", currentUser);
-  fd.append("image", imageFile);
-
+  btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Checking for matches…`;
+  showToast("success", "Finding similar items...");
   try {
-    const res = await fetch(`${API}/items/${type}`, { method: "POST", body: fd });
+    // ===============================
+    // 🔥 STEP 1: FIND MATCHES FIRST
+    // ===============================
+    await findMatches(imageFile, name, type);
+
+    // ===============================
+    // 🔥 STEP 2: CONTINUE UPLOAD
+    // ===============================
+    btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Uploading…`;
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("description", description);
+    fd.append("location", location);
+    fd.append("user", currentUser);
+    fd.append("image", imageFile);
+
+    const res = await fetch(`${API}/items/${type}`, {
+      method: "POST",
+      body: fd
+    });
+
     const data = await res.json();
 
     if (!res.ok) {
-      const msg = data.errors ? data.errors.join(", ") : (data.message || "Upload failed");
+      const msg = data.errors
+        ? data.errors.join(", ")
+        : (data.message || "Upload failed");
+
       showToast("error", msg);
       return;
     }
 
+    // ===============================
+    // ✅ SUCCESS
+    // ===============================
     showToast("success", "Item posted successfully!");
 
     // Reset form
@@ -1298,14 +1357,49 @@ async function submitItem() {
 
     setTimeout(() => showPage(type), 1200);
 
-  } catch {
-    showToast("error", "Network error. Please try again.");
+  } catch (err) {
+    console.error(err);
+    showToast("error", "Something went wrong. Please try again.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = "📤 Post Item";
   }
 }
 
+
+function showMatches(matches) {
+  // Remove old matches if any
+  let existing = document.getElementById("matchContainer");
+  if (existing) existing.remove();
+
+  const container = document.createElement("div");
+  container.id = "matchContainer";
+  container.style.marginTop = "20px";
+
+  if (!matches.length) {
+    container.innerHTML = "<p style='color:gray'>No matches found 😕</p>";
+  } else {
+    container.innerHTML = "<h3 style='margin-bottom:10px;'>🔍 Possible Matches</h3>";
+
+    matches.forEach(m => {
+      const div = document.createElement("div");
+
+      div.style.border = "1px solid #333";
+      div.style.padding = "10px";
+      div.style.marginBottom = "10px";
+
+      div.innerHTML = `
+        <img src="${m.item.imageUrl}" width="120"/>
+        <p>${m.item.description}</p>
+        <p style="color:#aaa;">Similarity: ${(m.score * 100).toFixed(2)}%</p>
+      `;
+
+      container.appendChild(div);
+    });
+  }
+
+  document.getElementById("uploadForm").appendChild(container);
+}
 // ── TOAST ─────────────────────────────────────────────────────────
 function showToast(type, message) {
   const container = document.getElementById("toastContainer");
