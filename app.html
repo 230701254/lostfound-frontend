@@ -1054,44 +1054,32 @@ async function loadDashboard() {
   }
 }
 
-function findMatches(file, category, type) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+function findMatches(category, type) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await fetch(API + "/match", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          category,
+          type
+        })
+      });
 
-    reader.onload = async () => {
-      try {
-        const base64 = reader.result.split(",")[1];
+      const matches = await res.json();
 
-        const res = await fetch(API + "/match", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            imageBase64: base64,
-            category,
-            type
-          })
-        });
+      console.log("🔥 MATCHES:", matches);
 
-        const matches = await res.json();
+      showMatches(matches);
 
-        console.log("🔥 MATCHES:", matches);
-
-        showMatches(matches);
-
-        resolve(matches); // ✅ IMPORTANT
-      } catch (err) {
-        reject(err);
-      }
-    };
-
-    reader.onerror = reject;
-
-    reader.readAsDataURL(file);
+      resolve(matches);
+    } catch (err) {
+      reject(err);
+    }
   });
 }
-
 
 async function loadItems(type) {
   const gridId = type + "Grid";
