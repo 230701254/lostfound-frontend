@@ -1054,34 +1054,36 @@ async function loadDashboard() {
   }
 }
 
-function findMatches(category, type) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await fetch(API + "/match", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          category,
-          type
-        })
-      });
+async function findMatches(category, type) {
+  try {
+    const res = await fetch(API + "/match", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        category,
+        type
+      })
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      console.log("🔥 MATCHES:", data);
+    console.log("🔥 MATCH RESPONSE:", data);
 
-      // 🔥 IMPORTANT CHANGE
-      showMatches(data.matches || []);
+    // 🔥 handle backend response safely
+    const matches = data.matches || [];
 
-      resolve(data.matches || []);
-    } catch (err) {
-      reject(err);
-    }
-  });
+    showMatches(matches);
+
+    return matches;
+
+  } catch (err) {
+    console.error("❌ Match error:", err);
+    showMatches([]); // fallback UI
+    return [];
+  }
 }
-
 async function loadItems(type) {
   const gridId = type + "Grid";
   setGridLoading(gridId);
@@ -1295,19 +1297,12 @@ async function submitItem() {
 
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
-  btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Checking for matches…`;
-  showToast("success", "Finding similar items...");
+  btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Uploading…`;
+
   try {
     // ===============================
-    // 🔥 STEP 1: FIND MATCHES FIRST
+    // 🔥 STEP 1: UPLOAD ITEM FIRST
     // ===============================
-    await findMatches(imageFile, name, type);
-
-    // ===============================
-    // 🔥 STEP 2: CONTINUE UPLOAD
-    // ===============================
-    btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Uploading…`;
-
     const fd = new FormData();
     fd.append("name", name);
     fd.append("description", description);
@@ -1336,7 +1331,16 @@ async function submitItem() {
     // ===============================
     showToast("success", "Item posted successfully!");
 
-    // Reset form
+    // ===============================
+    // 🔥 STEP 2: FIND MATCHES (CORRECT)
+    // ===============================
+    console.log("CALLING MATCH:", data.item.category, data.item.type);
+
+    await findMatches(data.item.category, data.item.type);
+
+    // ===============================
+    // 🔄 RESET FORM
+    // ===============================
     document.getElementById("itemName").value = "";
     document.getElementById("itemDesc").value = "";
     document.getElementById("itemLocation").value = "";
@@ -1357,7 +1361,6 @@ async function submitItem() {
 
 
 function showMatches(matches) {
-  // Remove old matches if any
   let existing = document.getElementById("matchContainer");
   if (existing) existing.remove();
 
@@ -1370,7 +1373,7 @@ function showMatches(matches) {
   } else {
     container.innerHTML = "<h3 style='margin-bottom:10px;'>🔍 Possible Matches</h3>";
 
-    matches.forEach(m => {
+    matches.forEach(item => {
       const div = document.createElement("div");
 
       div.style.border = "1px solid #333";
@@ -1378,9 +1381,9 @@ function showMatches(matches) {
       div.style.marginBottom = "10px";
 
       div.innerHTML = `
-        <img src="${m.item.imageUrl}" width="120"/>
-        <p>${m.item.description}</p>
-        <p style="color:#aaa;">Similarity: ${(m.score * 100).toFixed(2)}%</p>
+        <img src="${item.imageUrl}" width="120"/>
+        <p>${item.name}</p>
+        <p style="color:#aaa;">${item.location}</p>
       `;
 
       container.appendChild(div);
