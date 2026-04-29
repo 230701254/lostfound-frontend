@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Lost & Found</title>
+
+<style>
+body { margin:0; font-family:Inter; background:#000; color:#e5e5e5; }
+.layout { display:grid; grid-template-columns:230px 1fr; }
+
+.sidebar {
+  height:100vh;
+  background:#050505;
+  border-right:1px solid #1a1a1a;
+  padding:20px;
+}
+
+.sidebar h2 { margin-bottom:25px; font-size:18px; }
+
+.sidebar a {
+  display:block;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:8px;
+  color:#aaa;
+  cursor:pointer;
+}
+
+.sidebar a:hover { background:#111; color:white; }
+
+.main { padding:25px; }
+
+.topbar {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:25px;
+}
+
+button {
+  padding:8px 12px;
+  background:#111;
+  border:1px solid #222;
+  color:white;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.hero {
+  background:#0f0f0f;
+  border:1px solid #1a1a1a;
+  padding:25px;
+  border-radius:12px;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:20px;
+}
+
+.card {
+  background:#050505;
+  border:1px solid #1a1a1a;
+  border-radius:12px;
+  overflow:hidden;
+}
+
+.card img {
+  width:100%;
+  height:180px;
+  object-fit:cover;
+}
+
+.content { padding:14px; }
+
+.badge { font-size:11px; padding:4px 8px; border-radius:6px; }
+.lost { background:#2a0a0a; color:#ff4d4d; }
+.found { background:#0a2a1a; color:#22c55e; }
+
+.delete-btn {
+  background:#1a0a0a;
+  border:1px solid #330000;
+  color:#ff4d4d;
+  margin-top:8px;
+}
+
+.chat-btn {
+  background:#0a1a2a;
+  border:1px solid #003366;
+  color:#3b82f6;
+  margin-top:8px;
+}
+
+.hidden { display:none; }
+
+.upload-card {
+  width:420px;
+  margin:auto;
+  background:#050505;
+  padding:25px;
+  border-radius:12px;
+  border:1px solid #1a1a1a;
+}
+
+.upload-card input, select {
+  width:100%;
+  margin-bottom:10px;
+  padding:10px;
+  background:#111;
+  border:1px solid #222;
+  color:white;
+  border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <h2>📦 Lost & Found</h2>
+  <a onclick="showPage('dashboard')">Dashboard</a>
+  <a onclick="showPage('lost')">Lost</a>
+  <a onclick="showPage('found')">Found</a>
+  <a onclick="showPage('upload')">Upload</a>
+  <a onclick="showMessages()">Messages <span id="msgBadge" style="color:red;"></span></a>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<div class="topbar">
+  <div id="userArea"></div>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboardPage">
+  <div class="hero">
+    <h1>Welcome back 👋</h1>
+    <p>Manage lost & found items efficiently.</p>
+    <button onclick="showPage('lost')">Browse Lost</button>
+    <button onclick="showPage('found')">Browse Found</button>
+    <button onclick="showPage('upload')">Upload</button>
+  </div>
+
+  <h2 style="margin-top:30px;">Recent Items</h2>
+  <div id="recentItems" class="grid"></div>
+</div>
+
+<!-- UPLOAD -->
+<div id="uploadPage" class="hidden">
+  <div class="upload-card">
+    <h2>Add Item</h2>
+    <form id="itemForm">
+      <input id="name" placeholder="Name" required />
+      <input id="description" placeholder="Description" required />
+      <input id="location" placeholder="Location" required />
+
+      <select id="type">
+        <option value="lost">Lost</option>
+        <option value="found">Found</option>
+      </select>
+
+      <input type="file" id="image" required />
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+</div>
+
+<!-- ITEMS -->
+<div id="itemsPage" class="hidden">
+  <h2 id="pageTitle"></h2>
+  <div id="items" class="grid"></div>
+</div>
+<div id="messagesPage" class="hidden">
+  <h2>Your Messages</h2>
+  <div id="chatList"></div>
+</div>
+</div>
+</div>
+
+<script>
+const API = "https://lostfound-backend-52mp.onrender.com";
+let currentUser = null;
+let currentType = "lost";
+
+/* 🔐 AUTH FIX */
+async function checkAuth() {
+  try {
+    const res = await fetch("/.auth/me");
+    const data = await res.json();
+
+    if (!data || !data.clientPrincipal) {
+      setTimeout(checkAuth, 1000);
+      return;
+    }
+
+    currentUser = data.clientPrincipal.userDetails;
+    loadUnreadCount();
+    document.getElementById("userArea").innerText = "👤 " + currentUser;
+
+    showPage("dashboard");
+
+  } catch {
+    setTimeout(checkAuth, 1000);
+  }
+}
+
+/* NAV */
+function showPage(page){
+  ["dashboardPage","uploadPage","itemsPage","messagesPage"].forEach(id =>
+    document.getElementById(id).classList.add("hidden")
+  );
+
+  if(page==="dashboard"){
+    document.getElementById("dashboardPage").classList.remove("hidden");
+  }
+
+  if(page==="upload"){
+    document.getElementById("uploadPage").classList.remove("hidden");
+  }
+
+  if(page==="lost" || page==="found"){
+    currentType = page;
+    document.getElementById("itemsPage").classList.remove("hidden");
+    document.getElementById("pageTitle").innerText = page.toUpperCase();
+    loadItems(page);
+  }
+}
+
+/* LOAD */
+async function loadItems(type){
+  const data = await fetch(API+"/"+type).then(r=>r.json());
+  render(data);
+}
+
+/* 🔥 UPDATED CARD UI */
+function render(data){
+  const container = document.getElementById("items");
+  container.innerHTML = "";
+
+  data.forEach(item => {
+    container.innerHTML += `
+    <div class="card">
+      <img src="${item.imageUrl}">
+      <div class="content">
+
+        <span class="badge ${currentType}">${currentType}</span>
+
+        <h3>${item.name || "No Name"}</h3>
+        <p>${item.description || ""}</p>
+        <p>📍 ${item.location || "Unknown"}</p>
+
+        ${item.user !== currentUser ? `
+          <button class="chat-btn"
+            onclick="openChat('${item.id}','${item.user}')">
+            💬 Chat Owner
+          </button>
+        ` : ""}
+
+        ${item.user === currentUser ? `
+          <button class="delete-btn"
+            onclick="deleteItem('${item.id}')">
+            🗑 Delete
+          </button>
+        ` : ""}
+
+      </div>
+    </div>
+    `;
+  });
+}
+
+/* CHAT */
+function openChat(itemId, owner){
+  window.location.href = `chat.html?itemId=${itemId}&user=${owner}`;
+}
+
+/* UPLOAD */
+document.getElementById("itemForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+
+  const fd = new FormData();
+  fd.append("name", document.getElementById("name").value);
+  fd.append("description", document.getElementById("description").value);
+  fd.append("location", document.getElementById("location").value);
+  fd.append("image", document.getElementById("image").files[0]);
+  fd.append("user", currentUser);
+
+  const type = document.getElementById("type").value;
+
+  await fetch(API+"/"+type,{ method:"POST", body:fd });
+
+  alert("Uploaded!");
+  showPage(type);
+});
+
+/* DELETE */
+async function deleteItem(id){
+  await fetch(API+"/"+currentType+"/"+id,{
+    method:"DELETE",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ user: currentUser })
+  });
+
+  loadItems(currentType);
+}
+
+/* LOGOUT */
+function logout(){
+  window.location.href="/logout";
+}
+async function showMessages() {
+  showPage(""); // hide all
+  document.getElementById("messagesPage").classList.remove("hidden");
+
+  const res = await fetch(API + "/my-chats/" + currentUser);
+  const data = await res.json();
+
+  const container = document.getElementById("chatList");
+  container.innerHTML = "";
+
+  data.forEach(chat => {
+    container.innerHTML += `
+      <div onclick="openChat('${chat.itemId}')"
+           style="padding:12px;border-bottom:1px solid #222;cursor:pointer">
+
+        💬 💬 ${chat.name}<br>
+        <small>${chat.lastMessage}</small>
+
+        <span style="float:right;color:red;">
+          ${chat.count > 0 ? chat.count : ""}
+        </span>
+      </div>
+    `;
+  });
+}
+async function loadUnreadCount() {
+  const res = await fetch(API + "/my-chats/" + currentUser);
+  const data = await res.json();
+
+  let total = 0;
+  data.forEach(chat => total += chat.count);
+
+  document.getElementById("msgBadge").innerText = total > 0 ? `(${total})` : "";
+}
+checkAuth();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!-- redeploy -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Lost & Found</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #020617;
+  color: white;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  width: 90%;
+  max-width: 600px;
+  padding: 40px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  text-align: center;
+}
+
+h1 { font-size: 32px; }
+p { color: #94a3b8; }
+
+button {
+  background: white;
+  color: black;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>📦 Lost & Found</h1>
+  <p>Report and find lost items in campus</p>
+
+  <button onclick="login()">Sign in with Google</button>
+</div>
+
+<script>
+function login() {
+  window.location.href = "/login";
+}
+</script>
+
+</body>
+</html>
