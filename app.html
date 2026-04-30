@@ -1420,16 +1420,16 @@ function showMatchPage(matches) {
 
 
 function resetForm() {
-    document.getElementById("itemName").value = "";
-    document.getElementById("itemDesc").value = "";
-    document.getElementById("itemLocation").value = "";
-    document.getElementById("itemType").value = "lost";
-    document.getElementById("itemImage").value = "";
+  document.getElementById("itemName").value = "";
+  document.getElementById("itemDesc").value = "";
+  document.getElementById("itemLocation").value = "";
+  document.getElementById("itemType").value = "lost";
+  document.getElementById("itemImage").value = "";
 
-    document.getElementById("filePreview")?.classList.remove("show");
-    document.getElementById("fileDropContent")?.style.display = "block";
-  }
-  
+  document.getElementById("filePreview")?.classList.remove("show");
+  document.getElementById("fileDropContent")?.style.display = "block";
+}
+
 // ── TOAST ─────────────────────────────────────────────────────────
 function showToast(type, message) {
   const container = document.getElementById("toastContainer");
