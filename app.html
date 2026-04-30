@@ -908,6 +908,10 @@ select.form-input option { background: #111; }
           </div>
         </div>
       </div>
+      <section id="matchPage" class="page">
+  <h2>🔍 Match Found</h2>
+  <div class="grid" id="matchGrid"></div>
+</section>
 
     </div>
   </div>
@@ -1061,29 +1065,27 @@ async function findMatches(category, type) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        category,
-        type
-      })
+      body: JSON.stringify({ category, type })
     });
 
     const data = await res.json();
 
-    console.log("🔥 MATCH RESPONSE:", data);
+    const matches = data.matches || data;
 
-    // 🔥 handle backend response safely
-    const matches = data.matches || [];
+    console.log("🔥 MATCHES:", matches);
 
-    showMatches(matches);
+    // 🔥 CALL NEW PAGE
+    showMatchPage(matches);
 
     return matches;
 
   } catch (err) {
-    console.error("❌ Match error:", err);
-    showMatches([]); // fallback UI
+    console.error(err);
+    showMatchPage([]);
     return [];
   }
 }
+
 async function loadItems(type) {
   const gridId = type + "Grid";
   setGridLoading(gridId);
@@ -1348,7 +1350,7 @@ async function submitItem() {
     document.getElementById("filePreview").classList.remove("show");
     document.getElementById("fileDropContent").style.display = "block";
 
-    setTimeout(() => showPage(type), 1200);
+    // setTimeout(() => showPage(type), 1200);
 
   } catch (err) {
     console.error(err);
@@ -1399,6 +1401,44 @@ function showMatches(matches) {
 
     container.prepend(card);
   });
+}
+function showMatchPage(matches) {
+  const grid = document.getElementById("matchGrid");
+
+  grid.innerHTML = "";
+
+  if (!matches.length) {
+    grid.innerHTML = "<p>No matches found 😕</p>";
+    showPage("matchPage");
+    return;
+  }
+
+  matches.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      <img class="card-img" src="${item.imageUrl}" />
+      <div class="card-body">
+        <div class="card-type-badge ${item.type === "lost" ? "badge-lost" : "badge-found"}">
+          ${item.type.toUpperCase()}
+        </div>
+
+        <div class="card-name">${item.name}</div>
+        <div class="card-location">📍 ${item.location}</div>
+        <div class="card-desc">${item.description || ""}</div>
+
+        <div style="margin-top:8px; color:#aaa;">
+          👤 ${item.user}
+        </div>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+
+  // 🔥 SWITCH PAGE
+  showPage("matchPage");
 }
 // ── TOAST ─────────────────────────────────────────────────────────
 function showToast(type, message) {
