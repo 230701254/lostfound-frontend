@@ -1293,18 +1293,15 @@ async function submitItem() {
   const imageFile = document.getElementById("itemImage").files[0];
 
   if (!name || !description || !location || !imageFile) {
-    showToast("error", "Please fill in all fields and add a photo");
+    showToast("error", "Please fill all fields");
     return;
   }
 
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
-  btn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Uploading…`;
 
   try {
-    // ===============================
-    // 🔥 STEP 1: UPLOAD ITEM FIRST
-    // ===============================
+    // ✅ STEP 1: UPLOAD FIRST
     const fd = new FormData();
     fd.append("name", name);
     fd.append("description", description);
@@ -1320,44 +1317,23 @@ async function submitItem() {
     const data = await res.json();
 
     if (!res.ok) {
-      const msg = data.errors
-        ? data.errors.join(", ")
-        : (data.message || "Upload failed");
-
-      showToast("error", msg);
+      showToast("error", data.message || "Upload failed");
       return;
     }
 
-    // ===============================
-    // ✅ SUCCESS
-    // ===============================
     showToast("success", "Item posted successfully!");
 
-    // ===============================
-    // 🔥 STEP 2: FIND MATCHES (CORRECT)
-    // ===============================
-    console.log("CALLING MATCH:", data.item.category, data.item.type);
-
+    // ✅ STEP 2: FIND MATCHES AFTER SUCCESS
     await findMatches(data.item.category, data.item.type);
 
-    // ===============================
-    // 🔄 RESET FORM
-    // ===============================
-    document.getElementById("itemName").value = "";
-    document.getElementById("itemDesc").value = "";
-    document.getElementById("itemLocation").value = "";
-    document.getElementById("itemImage").value = "";
-    document.getElementById("filePreview").classList.remove("show");
-    document.getElementById("fileDropContent").style.display = "block";
-
-    // setTimeout(() => showPage(type), 1200);
+    // ✅ STEP 3: RESET FORM (IMPORTANT FIX)
+    resetForm();
 
   } catch (err) {
     console.error(err);
-    showToast("error", "Something went wrong. Please try again.");
+    showToast("error", "Something went wrong");
   } finally {
     btn.disabled = false;
-    btn.innerHTML = "📤 Post Item";
   }
 }
 
@@ -1440,6 +1416,20 @@ function showMatchPage(matches) {
   // 🔥 SWITCH PAGE
   showPage("matchPage");
 }
+
+
+
+function resetForm() {
+    document.getElementById("itemName").value = "";
+    document.getElementById("itemDesc").value = "";
+    document.getElementById("itemLocation").value = "";
+    document.getElementById("itemType").value = "lost";
+    document.getElementById("itemImage").value = "";
+
+    document.getElementById("filePreview")?.classList.remove("show");
+    document.getElementById("fileDropContent")?.style.display = "block";
+  }
+  
 // ── TOAST ─────────────────────────────────────────────────────────
 function showToast(type, message) {
   const container = document.getElementById("toastContainer");
