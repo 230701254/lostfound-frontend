@@ -1426,8 +1426,11 @@ function resetForm() {
   document.getElementById("itemType").value = "lost";
   document.getElementById("itemImage").value = "";
 
-  document.getElementById("filePreview")?.classList.remove("show");
-  document.getElementById("fileDropContent")?.style.display = "block";
+  const preview = document.getElementById("filePreview");
+  if (preview) preview.classList.remove("show");
+
+  const drop = document.getElementById("fileDropContent");
+  if (drop) drop.style.display = "block";
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────
