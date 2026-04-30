@@ -1070,18 +1070,12 @@ async function findMatches(category, type) {
 
     const data = await res.json();
 
-    const matches = data.matches || data;
+    console.log("🔥 MATCHES:", data);
 
-    console.log("🔥 MATCHES:", matches);
-
-    // 🔥 CALL NEW PAGE
-    showMatchPage(matches);
-
-    return matches;
+    return data.matches || [];
 
   } catch (err) {
     console.error(err);
-    showMatchPage([]);
     return [];
   }
 }
@@ -1299,9 +1293,12 @@ async function submitItem() {
 
   const btn = document.getElementById("submitBtn");
   btn.disabled = true;
+  btn.innerHTML = "Posting...";
 
   try {
-    // ✅ STEP 1: UPLOAD FIRST
+    // ===============================
+    // ✅ STEP 1: UPLOAD ITEM
+    // ===============================
     const fd = new FormData();
     fd.append("name", name);
     fd.append("description", description);
@@ -1316,24 +1313,42 @@ async function submitItem() {
 
     const data = await res.json();
 
-    if (!res.ok) {
+    // 🔥 FIX: use data.success (NOT res.ok)
+    if (!data.success) {
       showToast("error", data.message || "Upload failed");
       return;
     }
 
     showToast("success", "Item posted successfully!");
 
-    // ✅ STEP 2: FIND MATCHES AFTER SUCCESS
-    await findMatches(data.item.category, data.item.type);
+    // ===============================
+    // ✅ STEP 2: FIND MATCHES
+    // ===============================
+    const category = data.item.category;
+    const itemType = data.item.type;
 
-    // ✅ STEP 3: RESET FORM (IMPORTANT FIX)
+    const matches = await findMatches(category, itemType);
+
+    // ===============================
+    // ✅ STEP 3: RESET FORM
+    // ===============================
     resetForm();
+
+    // ===============================
+    // ✅ STEP 4: SHOW MATCH PAGE (IF FOUND)
+    // ===============================
+    if (matches && matches.length > 0) {
+      showMatchPage(matches);
+    } else {
+      showToast("info", "No matches found");
+    }
 
   } catch (err) {
     console.error(err);
     showToast("error", "Something went wrong");
   } finally {
     btn.disabled = false;
+    btn.innerHTML = "📤 Post Item";
   }
 }
 
